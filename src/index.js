@@ -10,19 +10,82 @@ app.use(cors());
 const users = [];
 
 function checksExistsUserAccount(request, response, next) {
-  // Complete aqui
+  const { username } = request.headers;
+
+  const user = users.find(user => user.username === username);
+
+  if(!user){
+    return response.status(404).json({"error":"User not found"})
+  }
+
+  request.user = user;
+
+  return next();
 }
 
 function checksCreateTodosUserAvailability(request, response, next) {
-  // Complete aqui
+  const { user } = request;
+
+  const pro = user.pro;
+  const count = user.todos.length;
+
+  if(pro === false && count >= 10){
+    return response.status(403).json({"error":"Do you need get Pro licence"})
+  }
+  
+  
+  return next();
 }
 
 function checksTodoExists(request, response, next) {
   // Complete aqui
+  
+  const { username } = request.headers;
+  const { id } = request.params
+ 
+  
+  //VERIFICANDO ID
+  const isUuid = validate(id,4)
+
+  if(!isUuid){
+    return response.status(400).json({"error":"ID is incorrect"})
+  }
+
+  // VERIFICANDO USUÁRIO
+  const user = users.find(user => user.username === username);
+
+  if(!user){
+    return response.status(404).json({"error":"User not found"})
+  }
+
+  // Verificando todo
+  const todo = user.todos.find(todo => todo.id === id);
+
+  if (!todo){
+    return response.status(404).json({"error":"Todo not found"})
+  }
+
+  request.todo = todo;
+  request.user = user;
+  
+  return next();
+
 }
 
 function findUserById(request, response, next) {
   // Complete aqui
+  const { id } = request.params
+
+  const user = users.find(user => user.id === id);
+
+  if (!user){
+    return response.status(404).json({"error":"User not found"})
+  }
+  
+  request.user = user
+
+  return next();
+
 }
 
 app.post('/users', (request, response) => {
@@ -88,7 +151,7 @@ app.post('/todos', checksExistsUserAccount, checksCreateTodosUserAvailability, (
   return response.status(201).json(newTodo);
 });
 
-app.put('/todos/:id', checksTodoExists, (request, response) => {
+app.put('/todos/:id',checksTodoExists, (request, response) => {
   const { title, deadline } = request.body;
   const { todo } = request;
 
